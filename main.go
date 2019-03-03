@@ -5,14 +5,15 @@ import
   "io/ioutil"
   "fmt"
   //"image"
+  "github.com/paulmach/orb/mercator"
   "github.com/paulmach/go.geojson"
   "github.com/fogleman/gg"
   "time"
 )
 
 const (
-  width = 400
-  height = 400
+  width = 1366
+  height = 1024
 )
 
 func main() {
@@ -69,6 +70,8 @@ func main() {
 
 func DrawLineString(c *gg.Context, f *geojson.Feature) (res *gg.Context, err error) {
   c.ClearPath()
+  /*x := float64(0.0)
+  y := float64(0.0)*/
   c.SetRGB(0.543, 0, 0)
   c.SetLineWidth(0.5)
   val := f.Geometry.LineString
@@ -77,7 +80,15 @@ func DrawLineString(c *gg.Context, f *geojson.Feature) (res *gg.Context, err err
     c.DrawLine(val[i - 1][0], val[i - 1][1], val[i][0], val[i][1])
   }*/
   for i := 0; i < len(val); i++ {
-    c.LineTo(val[i][0] + width / 2, val[i][1] + height / 2)
+  	fmt.Println(val[i][0], val[i][1])
+  	// fmt.Println(mercator.MetersToPixels(val[i][0] + width / 2, val[i][1] + height / 2, 1))
+  	// fmt.Println(mercator.MetersToLatLon(val[i][0] + width / 2, val[i][1] + height / 2))
+  	x, y := mercator.ToPlanar(val[i][0], val[i][1], 10)
+  	//x += (width / 2.0)
+  	//y += (height / 2.0)
+  	fmt.Println(x, ";", y)
+  	fmt.Println()
+    c.LineTo(x, y)
   }
   //c.SetFillRule(gg.FillRuleEvenOdd) // ?
   c.FillPreserve() // fills the current path with the current color
