@@ -4,7 +4,6 @@ import
 (
   "io/ioutil"
   "fmt"
-  //"image"
   "github.com/paulmach/orb/mercator"
   "github.com/paulmach/go.geojson"
   "github.com/fogleman/gg"
@@ -18,7 +17,7 @@ const (
 
 func main() {
   t1 := time.Now()
-  rawFeatureCollectionJSON, err := ioutil.ReadFile("./data.geojson")
+  rawFeatureCollectionJSON, err := ioutil.ReadFile("./Адм-территориальные границы РФ в формате GeoJSON/admin_level_3.geojson")
   if err != nil {
     fmt.Printf("Coulnd't load data.geojson file: %v", err)
     return
@@ -31,27 +30,20 @@ func main() {
     return
   }
 
-  /*ctx := gg.NewContext(width, height)
-  ctx.SetRGB(0, 0, 0)
-  ctx.Clear()
-  ctx.InvertY()*/
-  //img := image.NewRGBA(image.Rect(-width / 2, -height / 2, width / 2, height / 2))
-  //img := image.NewRGBA(image.Rect(0, 0, width, height))
-  //ctx := gg.NewContextForRGBA(img)
   ctx := gg.NewContext(width, height)
-  //ctx.DrawImageAnchored(img, 200, 200, 0.5, 0.5)
-  //ctx.InvertY()
   ctx.SetRGB(0, 0, 0) // Paint it, black!
   ctx.Clear()
-  
-  //ctx.InvertY()
+
+  ctx.ClearPath()
+  ctx.SetRGB(0.543, 0, 0)
+  ctx.SetLineWidth(1.5)
 
   for _, f := range fc.Features {
     switch {
-      case f.Geometry.IsLineString():
-        fmt.Println("Detected LineString type of data")
-        if ctx, err = DrawLineString(ctx, f); err != nil {
-          fmt.Printf("Couldn't handle LineString type: %v", err)
+      case f.Geometry.IsMultiPolygon():
+      	fmt.Println("Detected MultiPolygon type of data")
+        if ctx, err = DrawMultiPolygon(ctx, f); err != nil {
+          fmt.Printf("Couldn't handle MultiPolygon type: %v", err)
           return
         }
       default:
@@ -59,7 +51,6 @@ func main() {
         return
     }
   }
-  //ctx.DrawImageAnchored(ctx.Image(), 200, 200, 0.5, 0.5)
   err = ctx.SavePNG("image.png")
   if err != nil {
     fmt.Println("Tragic event saving context as PNG: %v", err)
@@ -68,32 +59,19 @@ func main() {
   fmt.Printf("\nProgram finished in %v ", time.Now().Sub(t1))
 }
 
-func DrawLineString(c *gg.Context, f *geojson.Feature) (res *gg.Context, err error) {
-  c.ClearPath()
-  /*x := float64(0.0)
-  y := float64(0.0)*/
-  c.SetRGB(0.543, 0, 0)
-  c.SetLineWidth(0.5)
-  val := f.Geometry.LineString
-  /*for i := 1; i < len(val); i++ {
-    fmt.Printf("%v\n", val[i - 1])
-    c.DrawLine(val[i - 1][0], val[i - 1][1], val[i][0], val[i][1])
-  }*/
-  for i := 0; i < len(val); i++ {
-  	fmt.Println(val[i][0], val[i][1])
-  	// fmt.Println(mercator.MetersToPixels(val[i][0] + width / 2, val[i][1] + height / 2, 1))
-  	// fmt.Println(mercator.MetersToLatLon(val[i][0] + width / 2, val[i][1] + height / 2))
-  	x, y := mercator.ToPlanar(val[i][0], val[i][1], 10)
-  	//x += (width / 2.0)
-  	//y += (height / 2.0)
-  	fmt.Println(x, ";", y)
-  	fmt.Println()
-    c.LineTo(x, y)
-  }
-  //c.SetFillRule(gg.FillRuleEvenOdd) // ?
-  c.FillPreserve() // fills the current path with the current color
-  c.Stroke()
-  c.Fill()
+func DrawMultiPolygon(c *gg.Context, f *geojson.Feature) (res *gg.Context, err error) {
+	for i := 0; i < len(f.Geometry.MultiPolygon); i++ {
+		for j := 0; j < len(f.Geometry.MultiPolygon[i]); j++ {
+			val := f.Geometry.MultiPolygon[i][j]
+			for k := 0; k < len(val); k++ {
+				x, y := mercator.ToPlanar(val[k][0], val[k][1], 10)
+				// x := val[k][0] + width / 2
+				// y := val[k][1] + height / 2
+				c.LineTo(x, y)
+			}
+			c.Stroke()
+		}
+	}
 
-  return c, err
+	return c, err
 }
